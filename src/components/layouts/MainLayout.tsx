@@ -27,7 +27,8 @@ import {
     Send,
     IndianRupee,
     Users,
-    BarChart3
+    BarChart3,
+    BrainCircuit
 } from 'lucide-react';
 
 const drawerWidth = 260;
@@ -43,14 +44,14 @@ export default function MainLayout() {
 
     // User-Level AI Decisioning (New Paradigm - Priority)
     const userLevelItems = [
-        { text: 'Use Cases', icon: <Target className="w-5 h-5" />, path: '/use-cases' },
+        { text: 'Use Cases', icon: <BrainCircuit className="w-5 h-5" />, path: '/use-cases' },
     ];
 
     // Campaign Management & Analytics
     const campaignItems = [
         { text: 'Campaign', icon: <Send className="w-5 h-5" />, path: '/campaigns' },
         { text: 'Daily Budget', icon: <IndianRupee className="w-5 h-5" />, path: '/settings/budget-goals' },
-        { text: 'Audience Creator', icon: <Users className="w-5 h-5" />, path: '/segments' },
+        { text: 'Ad-Hoc', icon: <Users className="w-5 h-5" />, path: '/segments' },
         { text: 'Reporting', icon: <BarChart3 className="w-5 h-5" />, path: '/reporting' },
     ];
 
@@ -72,75 +73,87 @@ export default function MainLayout() {
 
             <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                 {/* User-Level AI Decisioning Section */}
-                <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', letterSpacing: 1 }}>
-                        USER-LEVEL AI
-                    </Typography>
-                </Box>
+                <div className="px-4 pt-4 pb-2">
+                    <p className="text-xs font-bold text-blue-600 tracking-widest uppercase">
+                        AI Decisioning
+                    </p>
+                </div>
                 <List sx={{ px: 2, py: 0 }}>
-                    {userLevelItems.map((item) => (
-                        <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
-                            <ListItemButton
-                                selected={location.pathname.startsWith('/use-cases')}
-                                onClick={() => navigate(item.path)}
-                                sx={{
-                                    borderRadius: 2,
-                                    '&.Mui-selected': {
-                                        backgroundColor: 'primary.light',
-                                        color: 'primary.contrastText',
+                    {userLevelItems.map((item) => {
+                        const isSelected = location.pathname.startsWith('/use-cases');
+                        return (
+                            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                                <ListItemButton
+                                    onClick={() => navigate(item.path)}
+                                    className={`rounded-lg transition-all duration-200 group ${isSelected
+                                        ? '!bg-[#005dac] !text-white shadow-md'
+                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                        }`}
+                                    sx={{
+                                        borderRadius: 2,
                                         '&:hover': {
-                                            backgroundColor: 'primary.main',
-                                        },
-                                        '& .MuiListItemIcon-root': {
-                                            color: 'inherit',
-                                        },
-                                    },
-                                }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 40 }}>
-                                    {item.icon}
-                                </ListItemIcon>
-                                <ListItemText primary={item.text} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                                            backgroundColor: 'transparent' // Let Tailwind handle hover
+                                        }
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                                        {React.cloneElement(item.icon as React.ReactElement<any>, {
+                                            className: `w-5 h-5 transition-colors ${isSelected ? '!text-white' : 'text-gray-400 group-hover:text-gray-600'}`
+                                        })}
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={item.text}
+                                        primaryTypographyProps={{
+                                            className: `text-sm font-medium ${isSelected ? '!text-white' : 'text-gray-600 group-hover:text-gray-900'}`
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        );
+                    })}
                 </List>
 
                 <Divider sx={{ mx: 2, my: 2 }} />
 
                 {/* Campaign Management Section */}
-                <Box sx={{ px: 2, pb: 1 }}>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 1 }}>
-                        CAMPAIGN MANAGEMENT
-                    </Typography>
-                </Box>
+                <div className="px-4 pb-2">
+                    <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">
+                        Campaign Management
+                    </p>
+                </div>
                 <List sx={{ px: 2, py: 0 }}>
-                    {campaignItems.map((item) => (
-                        <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
-                            <ListItemButton
-                                selected={location.pathname === item.path}
-                                onClick={() => navigate(item.path)}
-                                sx={{
-                                    borderRadius: 2,
-                                    '&.Mui-selected': {
-                                        backgroundColor: 'primary.light',
-                                        color: 'primary.contrastText',
+                    {campaignItems.map((item) => {
+                        const isSelected = location.pathname === item.path;
+                        return (
+                            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                                <ListItemButton
+                                    onClick={() => navigate(item.path)}
+                                    className={`rounded-lg transition-all duration-200 group ${isSelected
+                                        ? '!bg-[#005dac] !text-white shadow-md'
+                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                        }`}
+                                    sx={{
+                                        borderRadius: 2,
                                         '&:hover': {
-                                            backgroundColor: 'primary.main',
-                                        },
-                                        '& .MuiListItemIcon-root': {
-                                            color: 'inherit',
-                                        },
-                                    },
-                                }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 40 }}>
-                                    {item.icon}
-                                </ListItemIcon>
-                                <ListItemText primary={item.text} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                                            backgroundColor: 'transparent' // Let Tailwind handle hover
+                                        }
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                                        {React.cloneElement(item.icon as React.ReactElement<any>, {
+                                            className: `w-5 h-5 transition-colors ${isSelected ? '!text-white' : 'text-gray-400 group-hover:text-gray-600'}`
+                                        })}
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={item.text}
+                                        primaryTypographyProps={{
+                                            className: `text-sm font-medium ${isSelected ? '!text-white' : 'text-gray-600 group-hover:text-gray-900'}`
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        );
+                    })}
                 </List>
             </Box>
 

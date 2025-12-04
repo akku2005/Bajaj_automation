@@ -28,6 +28,8 @@ export interface UseCase {
     budgetAdjustment?: {
         increaseSpendBy: number;
     };
+    todayBudget?: number;
+    todayGoal?: number;
     overrides: UseCaseOverrides;
     averageTicketSize?: number;
 }

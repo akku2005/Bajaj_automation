@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Card,
@@ -117,6 +118,7 @@ const SEGMENT_TEMPLATES: SegmentTemplate[] = [
 ];
 
 export default function SegmentBuilder() {
+    const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [audienceSize, setAudienceSize] = useState<number | null>(null);
@@ -245,8 +247,22 @@ export default function SegmentBuilder() {
                                         <Button variant="outlined" fullWidth>
                                             Save as Draft
                                         </Button>
-                                        <Button variant="contained" color="success" size="large" fullWidth startIcon={<GroupAdd />}>
-                                            Launch Campaign
+                                        <Button
+                                            variant="contained"
+                                            color="success"
+                                            size="large"
+                                            fullWidth
+                                            startIcon={<GroupAdd />}
+                                            onClick={() => navigate('/campaigns/create', {
+                                                state: {
+                                                    segmentName: query ? `AI Generated Segment` : 'Custom Segment',
+                                                    query: query,
+                                                    audienceSize: audienceSize,
+                                                    category: selectedCategory
+                                                }
+                                            })}
+                                        >
+                                            Create Campaign
                                         </Button>
                                     </Box>
                                 </>

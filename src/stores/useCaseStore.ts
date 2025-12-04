@@ -43,7 +43,9 @@ const initialUseCases: UseCase[] = [
         },
         budgetAdjustment: {
             increaseSpendBy: 10000
-        }
+        },
+        todayBudget: 50000,
+        todayGoal: 150
     },
     {
         id: 'cc-lead-growth',

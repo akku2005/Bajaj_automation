@@ -11,6 +11,7 @@ import PerformanceDashboard from './pages/Analytics/PerformanceDashboard';
 import GovernanceDashboard from './pages/Governance/GovernanceDashboard';
 import CampaignOverview from './pages/CampaignGovernance/CampaignOverview';
 import CampaignStats from './pages/CampaignGovernance/CampaignStats';
+import CreateCampaign from './pages/CampaignGovernance/CreateCampaign';
 import SystemReportingDashboard from './pages/Reporting/SystemReportingDashboard';
 import RevenueOptimization from './pages/Revenue/RevenueOptimization';
 import BudgetGoalsSettings from './pages/Settings/BudgetGoalsSettings';
@@ -102,10 +103,11 @@ function App() {
             <Router>
                 <Routes>
                     <Route path="/" element={<MainLayout />}>
-                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route index element={<Navigate to="/use-cases" replace />} />
                         <Route path="dashboard" element={<CampaignStrategyDashboard />} />
                         <Route path="campaigns" element={<CampaignOverview />} />
                         <Route path="campaigns/stats" element={<CampaignStats />} />
+                        <Route path="campaigns/create" element={<CreateCampaign />} />
                         <Route path="reporting" element={<SystemReportingDashboard />} />
                         <Route path="revenue" element={<RevenueOptimization />} />
 

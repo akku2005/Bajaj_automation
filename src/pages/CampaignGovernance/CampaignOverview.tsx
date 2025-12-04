@@ -1,53 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Calendar, TrendingUp, Users, IndianRupee, Play, Pause, MoreVertical, AlertCircle, Search, Download, Copy, Edit, Eye, Target, Activity, ArrowUpRight, RefreshCw, Zap, Send, BarChart3, Plus, Filter, ChevronDown } from 'lucide-react';
-
-// Campaign Analytics Interface
-interface CampaignAnalytics {
-    messagesSent: number;
-    messagesDelivered: number;
-    messagesOpened: number;
-    messagesClicked: number;
-    conversions: number;
-    lastUpdated: string;
-}
-
-interface AIRecommendation {
-    recommendationId: string;
-    confidence: number;
-    expectedLeads: number;
-    expectedConversion: string;
-    expectedRevenue: string;
-    expectedCPA: string;
-    aiReasoning: string;
-    fromUseCaseId: string;
-    fromUseCaseName: string;
-}
-
-interface Campaign {
-    id: string;
-    name: string;
-    status: 'sent' | 'paused' | 'scheduled' | 'completed' | 'predicted';
-    startDate: string;
-    endDate: string;
-    channel: 'WhatsApp' | 'SMS' | 'RCS';
-    product: string;
-    targetUsers: number;
-    budget: number;
-    spent: number;
-    targetConversions: number;
-    analytics: CampaignAnalytics;
-    aiRecommendation?: AIRecommendation;
-    createdDate: string;
-}
+import { useCampaignStore } from '../../stores/campaignStore';
+import { Campaign } from '../../types/campaign';
 
 export default function CampaignOverview() {
     const navigate = useNavigate();
-    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [activeTab, setActiveTab] = useState<'all' | 'sent' | 'scheduled' | 'predicted' | 'completed'>('all');
+    const { campaigns, setCampaigns } = useCampaignStore();
+    const [activeTab, setActiveTab] = useState<'all' | 'predicted' | 'sent' | 'scheduled'>('predicted');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterChannel, setFilterChannel] = useState('all');
     const [filterProduct, setFilterProduct] = useState('all');
+    const [filterDeliveryType, setFilterDeliveryType] = useState('all');
+
+    // Helper function to format date as YYYY-MM-DD for input fields
+    const formatDateForInput = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Set default date range: Today to Day After Tomorrow
+    const getDefaultDateFrom = () => formatDateForInput(new Date());
+    const getDefaultDateTo = () => {
+        const dayAfterTomorrow = new Date();
+        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        return formatDateForInput(dayAfterTomorrow);
+    };
+
+    const [filterDateFrom, setFilterDateFrom] = useState(getDefaultDateFrom());
+    const [filterDateTo, setFilterDateTo] = useState(getDefaultDateTo());
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -55,276 +38,9 @@ export default function CampaignOverview() {
     const fetchCampaignData = async () => {
         setIsRefreshing(true);
         try {
-            // In production, this would be an API call
-            const mockData: Campaign[] = [
-                {
-                    id: 'CC-001',
-                    name: 'High CIBIL Premium Card Push',
-                    status: 'sent',
-                    startDate: '2025-11-28',
-                    endDate: '2025-12-15',
-                    channel: 'WhatsApp',
-                    product: 'Credit Card',
-                    targetUsers: 125000,
-                    budget: 450000,
-                    spent: 285000,
-                    targetConversions: 5000,
-                    createdDate: '2025-11-25',
-                    analytics: {
-                        messagesSent: 98500,
-                        messagesDelivered: 96200,
-                        messagesOpened: 78500,
-                        messagesClicked: 12400,
-                        conversions: 3250,
-                        lastUpdated: new Date().toISOString()
-                    }
-                },
-                {
-                    id: 'CC-002',
-                    name: 'Q4 Personal Loan Campaign',
-                    status: 'sent',
-                    startDate: '2025-12-01',
-                    endDate: '2025-12-20',
-                    channel: 'SMS',
-                    product: 'Personal Loan',
-                    targetUsers: 180000,
-                    budget: 320000,
-                    spent: 95000,
-                    targetConversions: 7200,
-                    createdDate: '2025-11-28',
-                    analytics: {
-                        messagesSent: 65000,
-                        messagesDelivered: 63500,
-                        messagesOpened: 48200,
-                        messagesClicked: 8900,
-                        conversions: 1580,
-                        lastUpdated: new Date().toISOString()
-                    }
-                },
-                {
-                    id: 'CC-003',
-                    name: 'Gold Loan - Festival Season',
-                    status: 'paused',
-                    startDate: '2025-11-20',
-                    endDate: '2025-12-10',
-                    channel: 'RCS',
-                    product: 'Gold Loan',
-                    targetUsers: 95000,
-                    budget: 280000,
-                    spent: 142000,
-                    targetConversions: 3800,
-                    createdDate: '2025-11-18',
-                    analytics: {
-                        messagesSent: 58000,
-                        messagesDelivered: 56800,
-                        messagesOpened: 42100,
-                        messagesClicked: 6200,
-                        conversions: 1850,
-                        lastUpdated: new Date().toISOString()
-                    }
-                },
-                {
-                    id: 'CC-004',
-                    name: 'Insurance Cross-sell - Winter',
-                    status: 'scheduled',
-                    startDate: '2025-12-08',
-                    endDate: '2025-12-22',
-                    channel: 'WhatsApp',
-                    product: 'Insurance',
-                    targetUsers: 110000,
-                    budget: 195000,
-                    spent: 0,
-                    targetConversions: 4400,
-                    createdDate: '2025-11-30',
-                    analytics: {
-                        messagesSent: 0,
-                        messagesDelivered: 0,
-                        messagesOpened: 0,
-                        messagesClicked: 0,
-                        conversions: 0,
-                        lastUpdated: new Date().toISOString()
-                    }
-                },
-                {
-                    id: 'CC-005',
-                    name: 'Business Loan RCS Rich Media',
-                    status: 'sent',
-                    startDate: '2025-11-25',
-                    endDate: '2025-12-12',
-                    channel: 'RCS',
-                    product: 'Business Loan',
-                    targetUsers: 75000,
-                    budget: 385000,
-                    spent: 245000,
-                    targetConversions: 3000,
-                    createdDate: '2025-11-22',
-                    analytics: {
-                        messagesSent: 52000,
-                        messagesDelivered: 51200,
-                        messagesOpened: 43500,
-                        messagesClicked: 9800,
-                        conversions: 2925,
-                        lastUpdated: new Date().toISOString()
-                    }
-                },
-                {
-                    id: 'CC-006',
-                    name: 'Diwali Special - Premium Rewards',
-                    status: 'completed',
-                    startDate: '2025-10-15',
-                    endDate: '2025-11-15',
-                    channel: 'WhatsApp',
-                    product: 'Premium Card',
-                    targetUsers: 150000,
-                    budget: 280000,
-                    spent: 275000,
-                    targetConversions: 6000,
-                    createdDate: '2025-10-10',
-                    analytics: {
-                        messagesSent: 150000,
-                        messagesDelivered: 147000,
-                        messagesOpened: 135000,
-                        messagesClicked: 24000,
-                        conversions: 6750,
-                        lastUpdated: new Date().toISOString()
-                    }
-                },
-                // AI-Predicted Campaigns
-                {
-                    id: 'AI-REC-001',
-                    name: 'Premium Credit Card - High CIBIL Acquisition',
-                    status: 'predicted',
-                    startDate: '2025-12-10',
-                    endDate: '2025-12-28',
-                    channel: 'WhatsApp',
-                    product: 'Premium Card',
-                    targetUsers: 50000,
-                    budget: 156000,
-                    spent: 0,
-                    targetConversions: 925,
-                    createdDate: '2025-12-03',
-                    analytics: {
-                        messagesSent: 0,
-                        messagesDelivered: 0,
-                        messagesOpened: 0,
-                        messagesClicked: 0,
-                        conversions: 0,
-                        lastUpdated: new Date().toISOString()
-                    },
-                    aiRecommendation: {
-                        recommendationId: 'REC-12345',
-                        confidence: 94,
-                        expectedLeads: 245,
-                        expectedConversion: '18.5%',
-                        expectedRevenue: '₹3,82,050',
-                        expectedCPA: '₹1,560',
-                        aiReasoning: 'High CIBIL score (750+) customers show 42% higher approval rate for premium credit cards.',
-                        fromUseCaseId: 'use-case-1',
-                        fromUseCaseName: 'PL - AIP Uplift'
-                    }
-                },
-                {
-                    id: 'AI-REC-002',
-                    name: 'Gold Card Upgrade - Existing Silver Users',
-                    status: 'predicted',
-                    startDate: '2025-12-08',
-                    endDate: '2025-12-22',
-                    channel: 'RCS',
-                    product: 'Gold Card',
-                    targetUsers: 35000,
-                    budget: 119000,
-                    spent: 0,
-                    targetConversions: 847,
-                    createdDate: '2025-12-03',
-                    analytics: {
-                        messagesSent: 0,
-                        messagesDelivered: 0,
-                        messagesOpened: 0,
-                        messagesClicked: 0,
-                        conversions: 0,
-                        lastUpdated: new Date().toISOString()
-                    },
-                    aiRecommendation: {
-                        recommendationId: 'REC-12346',
-                        confidence: 91,
-                        expectedLeads: 156,
-                        expectedConversion: '24.2%',
-                        expectedRevenue: '₹2,99,520',
-                        expectedCPA: '₹1,920',
-                        aiReasoning: 'Existing Silver cardholders who spend ₹15K+ monthly are 3.2x more likely to upgrade to Gold.',
-                        fromUseCaseId: 'use-case-1',
-                        fromUseCaseName: 'PL - AIP Uplift'
-                    }
-                },
-                {
-                    id: 'AI-REC-003',
-                    name: 'Student Credit Card - College Segment',
-                    status: 'predicted',
-                    startDate: '2025-12-05',
-                    endDate: '2025-12-25',
-                    channel: 'SMS',
-                    product: 'Student Card',
-                    targetUsers: 60000,
-                    budget: 126400,
-                    spent: 0,
-                    targetConversions: 948,
-                    createdDate: '2025-12-03',
-                    analytics: {
-                        messagesSent: 0,
-                        messagesDelivered: 0,
-                        messagesOpened: 0,
-                        messagesClicked: 0,
-                        conversions: 0,
-                        lastUpdated: new Date().toISOString()
-                    },
-                    aiRecommendation: {
-                        recommendationId: 'REC-12347',
-                        confidence: 87,
-                        expectedLeads: 189,
-                        expectedConversion: '15.8%',
-                        expectedRevenue: '₹2,39,360',
-                        expectedCPA: '₹1,264',
-                        aiReasoning: 'College students (18-24) represent untapped market with high lifetime value potential.',
-                        fromUseCaseId: 'use-case-1',
-                        fromUseCaseName: 'PL - AIP Uplift'
-                    }
-                },
-                {
-                    id: 'AI-REC-004',
-                    name: 'Dormant Card Reactivation - High-Value',
-                    status: 'predicted',
-                    startDate: '2025-12-12',
-                    endDate: '2025-12-30',
-                    channel: 'WhatsApp',
-                    product: 'Reactivation',
-                    targetUsers: 25000,
-                    budget: 98000,
-                    spent: 0,
-                    targetConversions: 785,
-                    createdDate: '2025-12-03',
-                    analytics: {
-                        messagesSent: 0,
-                        messagesDelivered: 0,
-                        messagesOpened: 0,
-                        messagesClicked: 0,
-                        conversions: 0,
-                        lastUpdated: new Date().toISOString()
-                    },
-                    aiRecommendation: {
-                        recommendationId: 'REC-12348',
-                        confidence: 89,
-                        expectedLeads: 78,
-                        expectedConversion: '31.4%',
-                        expectedRevenue: '₹1,95,920',
-                        expectedCPA: '₹2,512',
-                        aiReasoning: 'Dormant cardholders (no txn 90+ days) who previously spent ₹20K+ monthly show 45% reactivation rate.',
-                        fromUseCaseId: 'use-case-1',
-                        fromUseCaseName: 'PL - AIP Uplift'
-                    }
-                }
-            ];
-
-            setCampaigns(mockData);
+            // In a real app, we would fetch from API here and update the store
+            // For now, we just simulate a delay as the store is already populated
+            await new Promise(resolve => setTimeout(resolve, 1000));
             setLastRefresh(new Date());
         } catch (error) {
             console.error('Error fetching campaign data:', error);
@@ -334,27 +50,76 @@ export default function CampaignOverview() {
     };
 
     useEffect(() => {
-        fetchCampaignData();
+        // fetchCampaignData(); // Store is already initialized
         const interval = setInterval(fetchCampaignData, 30000);
         return () => clearInterval(interval);
     }, []);
 
+    // Helper to check if date is today
+    const isToday = (dateString: string) => {
+        const date = new Date(dateString);
+        const today = new Date();
+        return date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear();
+    };
+
+    // Helper to check if date is yesterday
+    const isYesterday = (dateString: string) => {
+        const date = new Date(dateString);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        return date.getDate() === yesterday.getDate() &&
+            date.getMonth() === yesterday.getMonth() &&
+            date.getFullYear() === yesterday.getFullYear();
+    };
+
     // Filter campaigns based on active tab and filters
     const filteredCampaigns = campaigns.filter(campaign => {
-        if (activeTab !== 'all' && campaign.status !== activeTab) return false;
+        // Tab-based filtering
+        if (activeTab === 'predicted') {
+            // AI Suggested
+            if (campaign.status !== 'predicted') return false;
+        } else if (activeTab === 'sent') {
+            // Sent
+            if (campaign.status !== 'sent') return false;
+        } else if (activeTab === 'scheduled') {
+            // Scheduled
+            if (campaign.status !== 'scheduled') return false;
+        }
+
+        // Date range filter (Apply to ALL tabs)
+        if (filterDateFrom) {
+            const campaignDate = new Date(campaign.startDate);
+            const fromDate = new Date(filterDateFrom);
+            // Reset times to compare dates only
+            campaignDate.setHours(0, 0, 0, 0);
+            fromDate.setHours(0, 0, 0, 0);
+            if (campaignDate < fromDate) return false;
+        }
+        if (filterDateTo) {
+            const campaignDate = new Date(campaign.startDate);
+            const toDate = new Date(filterDateTo);
+            // Reset times to compare dates only
+            campaignDate.setHours(0, 0, 0, 0);
+            toDate.setHours(0, 0, 0, 0);
+            if (campaignDate > toDate) return false;
+        }
+
+        // Search and other filters (apply to all tabs)
         if (searchQuery && !campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) && !campaign.id.toLowerCase().includes(searchQuery.toLowerCase())) return false;
         if (filterChannel !== 'all' && campaign.channel !== filterChannel) return false;
         if (filterProduct !== 'all' && campaign.product !== filterProduct) return false;
+        if (filterDeliveryType !== 'all' && campaign.deliveryType !== filterDeliveryType) return false;
         return true;
     });
 
     // Tab counts
     const tabCounts = {
         all: campaigns.length,
-        sent: campaigns.filter(c => c.status === 'sent').length,
-        scheduled: campaigns.filter(c => c.status === 'scheduled').length,
         predicted: campaigns.filter(c => c.status === 'predicted').length,
-        completed: campaigns.filter(c => c.status === 'completed').length
+        sent: campaigns.filter(c => c.status === 'sent').length,
+        scheduled: campaigns.filter(c => c.status === 'scheduled').length
     };
 
     // Helper functions
@@ -372,7 +137,7 @@ export default function CampaignOverview() {
             sent: 'bg-green-100 text-green-700',
             paused: 'bg-yellow-100 text-yellow-700',
             scheduled: 'bg-blue-100 text-blue-700',
-            completed: 'bg-gray-100 text-gray-700',
+            yesterday: 'bg-gray-100 text-gray-700',
             predicted: 'bg-purple-100 text-purple-700'
         };
         return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-700';
@@ -422,21 +187,16 @@ export default function CampaignOverview() {
                             <BarChart3 className="w-4 h-4" />
                             Campaign Stats
                         </button>
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition font-semibold">
-                            <Plus className="w-4 h-4" />
-                            Create campaign
-                        </button>
                     </div>
                 </div>
 
                 {/* Tabs */}
                 <div className="flex items-center gap-1 border-b border-gray-200">
                     {[
+                        { key: 'predicted', label: '🤖 AI Suggested (today)', count: tabCounts.predicted },
                         { key: 'all', label: 'All', count: tabCounts.all },
-                        { key: 'sent', label: 'sent', count: tabCounts.sent },
                         { key: 'scheduled', label: 'Scheduled', count: tabCounts.scheduled },
-                        { key: 'predicted', label: '🤖 AI Predicted', count: tabCounts.predicted },
-                        { key: 'completed', label: 'Completed', count: tabCounts.completed }
+                        { key: 'sent', label: 'Sent', count: tabCounts.sent }
                     ].map(tab => (
                         <button
                             key={tab.key}
@@ -460,43 +220,98 @@ export default function CampaignOverview() {
 
             {/* Filters */}
             <div className="bg-white border-b border-gray-200 px-8 py-4">
-                <div className="flex items-center gap-4">
-                    <div className="flex-1 max-w-md relative">
-                        <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                        <input
-                            type="text"
-                            placeholder="Search campaigns..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                <div className="flex flex-col gap-4">
+                    {/* First Row: Search */}
+                    <div className="flex items-center gap-4">
+                        <div className="flex-1 max-w-md relative">
+                            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder="Search campaigns..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
                     </div>
-                    <select
-                        value={filterChannel}
-                        onChange={(e) => setFilterChannel(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
-                    >
-                        <option value="all">All Channels</option>
-                        <option value="WhatsApp">WhatsApp</option>
-                        <option value="SMS">SMS</option>
-                        <option value="RCS">RCS</option>
-                    </select>
-                    <select
-                        value={filterProduct}
-                        onChange={(e) => setFilterProduct(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
-                    >
-                        <option value="all">All Products</option>
-                        <option value="Credit Card">Credit Card</option>
-                        <option value="Personal Loan">Personal Loan</option>
-                        <option value="Gold Loan">Gold Loan</option>
-                        <option value="Business Loan">Business Loan</option>
-                        <option value="Insurance">Insurance</option>
-                    </select>
-                    <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2 transition">
-                        <Filter className="w-4 h-4" />
-                        More filters
-                    </button>
+
+                    {/* Second Row: All Filters */}
+                    <div className="flex items-center gap-3">
+                        {/* Date Range Filter */}
+                        <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-500" />
+                            <input
+                                type="date"
+                                value={filterDateFrom}
+                                onChange={(e) => setFilterDateFrom(e.target.value)}
+                                placeholder="From date"
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+                            />
+                            <span className="text-gray-500 text-sm">to</span>
+                            <input
+                                type="date"
+                                value={filterDateTo}
+                                onChange={(e) => setFilterDateTo(e.target.value)}
+                                placeholder="To date"
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+                            />
+                        </div>
+
+                        {/* Product Filter */}
+                        <select
+                            value={filterProduct}
+                            onChange={(e) => setFilterProduct(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+                        >
+                            <option value="all">All Products</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Personal Loan">Personal Loan</option>
+                            <option value="Gold Loan">Gold Loan</option>
+                            <option value="Business Loan">Business Loan</option>
+                            <option value="Insurance">Insurance</option>
+                        </select>
+
+                        {/* Channel Filter */}
+                        <select
+                            value={filterChannel}
+                            onChange={(e) => setFilterChannel(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+                        >
+                            <option value="all">All Channels</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="SMS">SMS</option>
+                            <option value="RCS">RCS</option>
+                        </select>
+
+                        {/* Delivery Type Filter */}
+                        <select
+                            value={filterDeliveryType}
+                            onChange={(e) => setFilterDeliveryType(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+                        >
+                            <option value="all">All Delivery Types</option>
+                            <option value="Immediate">Immediate</option>
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Batch">Batch</option>
+                            <option value="Triggered">Triggered</option>
+                        </select>
+
+                        {/* Clear Filters Button */}
+                        {(filterDateFrom || filterDateTo || filterProduct !== 'all' || filterChannel !== 'all' || filterDeliveryType !== 'all') && (
+                            <button
+                                onClick={() => {
+                                    setFilterDateFrom('');
+                                    setFilterDateTo('');
+                                    setFilterProduct('all');
+                                    setFilterChannel('all');
+                                    setFilterDeliveryType('all');
+                                }}
+                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2 transition text-sm"
+                            >
+                                Clear filters
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -594,7 +409,7 @@ export default function CampaignOverview() {
 
                                     {/* Campaign Performance */}
                                     <td className="px-6 py-4">
-                                        {campaign.status === 'completed' ? (
+                                        {campaign.status === 'yesterday' ? (
                                             <div className="space-y-2 min-w-[200px]">
                                                 <div>
                                                     <div className="flex justify-between items-center mb-1">

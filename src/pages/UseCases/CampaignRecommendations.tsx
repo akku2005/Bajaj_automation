@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Send, ThumbsUp, ThumbsDown, Copy, Zap, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, Send, ThumbsUp, ThumbsDown, Copy, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { useCampaignStore } from '../../stores/campaignStore';
+import { UseCase } from '../../types/useCase';
+import { Campaign } from '../../types/campaign';
 
-export default function CampaignRecommendations() {
+interface CampaignRecommendationsProps {
+    useCase: UseCase;
+}
+
+export default function CampaignRecommendations({ useCase }: CampaignRecommendationsProps) {
+    const navigate = useNavigate();
+    const { addCampaign } = useCampaignStore();
     const [expandedCard, setExpandedCard] = useState<number | null>(null);
     const [selectedCampaigns, setSelectedCampaigns] = useState<number[]>([]);
     const [userQuery, setUserQuery] = useState('');
     const [conversationHistory, setConversationHistory] = useState([
         { role: 'assistant', content: 'I\'ve analyzed your credit card segments and generated 4 AI-powered campaign recommendations. Ask me anything about why these campaigns are suggested or how to optimize them.' }
     ]);
+    const [isApproving, setIsApproving] = useState(false);
 
     const recommendations = [
         {
@@ -27,7 +38,8 @@ export default function CampaignRecommendations() {
             whatToChange: 'Consider highlighting exclusive benefits like lounge access and cashback in first message. A/B test instant approval vs. premium benefits messaging - instant approval typically performs 12% better for high CIBIL segments.',
             schedule: 'Mon-Wed, 10 AM - 2 PM IST',
             aiModel: 'High-Precision Model',
-            confidence: 94
+            confidence: 94,
+            product: 'Premium Card'
         },
         {
             id: 2,
@@ -46,7 +58,8 @@ export default function CampaignRecommendations() {
             whatToChange: 'Use staggered multi-touch approach: Day 1 RCS with benefits comparison, Day 3 WhatsApp with limited-time upgrade offer, Day 5 Push reminder. This sequence typically increases conversion by 15% vs single-touch.',
             schedule: 'Tue-Thu, 6 PM - 9 PM IST',
             aiModel: 'Efficiency Model',
-            confidence: 91
+            confidence: 91,
+            product: 'Gold Card'
         },
         {
             id: 3,
@@ -65,7 +78,8 @@ export default function CampaignRecommendations() {
             whatToChange: 'Split test messaging: 60% emphasize no-annual-fee + cashback, 40% highlight credit-building benefits. Gen-Z responds better to financial education angle, especially for first credit card.',
             schedule: 'Mon-Wed-Fri, 9 AM - 11 AM IST',
             aiModel: 'High-Precision Model',
-            confidence: 87
+            confidence: 87,
+            product: 'Student Card'
         },
         {
             id: 4,
@@ -84,7 +98,8 @@ export default function CampaignRecommendations() {
             whatToChange: 'Add hyper-personalization: Reference their last transaction category, offer bonus rewards in that category (e.g., "Miss dining rewards? Get 10x points on restaurants"). Personalized offers show 3x higher reactivation vs generic messaging.',
             schedule: 'Tue-Thu, 2 PM - 5 PM IST',
             aiModel: 'Efficiency Model',
-            confidence: 89
+            confidence: 89,
+            product: 'Credit Card'
         }
     ];
 
@@ -113,6 +128,73 @@ export default function CampaignRecommendations() {
         setUserQuery('');
     };
 
+    const handleApprove = async () => {
+        if (selectedCampaigns.length === 0) return;
+
+        setIsApproving(true);
+
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        const selectedRecs = recommendations.filter(rec => selectedCampaigns.includes(rec.id));
+
+        selectedRecs.forEach(rec => {
+            const newCampaign: Campaign = {
+                id: `CAMP-${Date.now()}-${rec.id}`,
+                name: rec.title,
+                status: 'predicted',
+                startDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+                endDate: new Date(Date.now() + 604800000).toISOString(), // Next week
+                channel: rec.channels[0] as any,
+                product: rec.product,
+                targetUsers: Math.floor(Math.random() * 50000) + 10000,
+                budget: Math.floor(Math.random() * 500000) + 100000,
+                spent: 0,
+                targetConversions: rec.expectedOutput.leads,
+                createdDate: new Date().toISOString(),
+                deliveryType: 'Triggered',
+                analytics: {
+                    messagesSent: 0,
+                    messagesDelivered: 0,
+                    messagesOpened: 0,
+                    messagesClicked: 0,
+                    conversions: 0,
+                    lastUpdated: new Date().toISOString()
+                },
+                aiRecommendation: {
+                    recommendationId: rec.recommendationId,
+                    confidence: rec.confidence,
+                    expectedLeads: rec.expectedOutput.leads,
+                    expectedConversion: rec.expectedOutput.conversion,
+                    expectedRevenue: rec.expectedOutput.revenue,
+                    expectedCPA: rec.expectedOutput.cpa,
+                    aiReasoning: rec.aiReasoning,
+                    fromUseCaseId: useCase.id,
+                    fromUseCaseName: useCase.name
+                }
+            };
+            addCampaign(newCampaign);
+        });
+
+        setIsApproving(false);
+        navigate('/campaigns');
+    };
+
+    if (useCase.status !== 'active') {
+        return (
+            <div className="p-8 text-center">
+                <div className="bg-gray-50 rounded-lg p-8 border border-gray-200 inline-block max-w-2xl">
+                    <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Campaign Recommendations Unavailable</h3>
+                    <p className="text-gray-600">
+                        AI campaign recommendations are only available for active use cases.
+                        Please activate this use case to view and generate campaign suggestions.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Main Content */}
@@ -123,13 +205,35 @@ export default function CampaignRecommendations() {
                     <div className="col-span-3 space-y-4">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-bold text-gray-900">AI-Generated Campaign Recommendations</h2>
-                            <span className="text-sm text-gray-600">{recommendations.length} Recommendations</span>
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-gray-600">{recommendations.length} Recommendations</span>
+                                {selectedCampaigns.length > 0 && (
+                                    <button
+                                        onClick={handleApprove}
+                                        disabled={isApproving}
+                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isApproving ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Approving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="w-4 h-4" />
+                                                Approve Selected ({selectedCampaigns.length})
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {recommendations.map((rec, index) => (
                             <div
                                 key={rec.id}
-                                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition cursor-pointer"
+                                className={`bg-white border rounded-lg overflow-hidden hover:shadow-md transition cursor-pointer ${selectedCampaigns.includes(rec.id) ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'
+                                    }`}
                                 onClick={() => setExpandedCard(expandedCard === index ? null : index)}
                             >
                                 {/* Recommendation Card Header */}
@@ -158,8 +262,8 @@ export default function CampaignRecommendations() {
                                                     {rec.confidence}% Confidence
                                                 </span>
                                                 <span className={`text-xs font-semibold px-3 py-1 rounded ${rec.aiModel === 'High-Precision Model'
-                                                        ? 'text-purple-700 bg-purple-50'
-                                                        : 'text-blue-700 bg-blue-50'
+                                                    ? 'text-purple-700 bg-purple-50'
+                                                    : 'text-blue-700 bg-blue-50'
                                                     }`}>
                                                     {rec.aiModel}
                                                 </span>
@@ -242,9 +346,14 @@ export default function CampaignRecommendations() {
                                         {/* Action Buttons */}
                                         <div className="flex gap-3 pt-4">
                                             <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
-                                                onClick={(e) => e.stopPropagation()}>
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (!selectedCampaigns.includes(rec.id)) {
+                                                        setSelectedCampaigns(prev => [...prev, rec.id]);
+                                                    }
+                                                }}>
                                                 <Copy className="w-4 h-4" />
-                                                Use This Recommendation
+                                                {selectedCampaigns.includes(rec.id) ? 'Selected' : 'Select Recommendation'}
                                             </button>
                                             <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 transition"
                                                 onClick={(e) => e.stopPropagation()}>
@@ -277,8 +386,8 @@ export default function CampaignRecommendations() {
                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div
                                             className={`max-w-xs px-3 py-2 rounded text-sm ${msg.role === 'user'
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-100 text-gray-900'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-100 text-gray-900'
                                                 }`}
                                         >
                                             {msg.content}

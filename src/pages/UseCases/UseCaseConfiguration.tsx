@@ -64,7 +64,9 @@ import {
     Storage,
     Info as InfoIcon,
     FilterList,
-    LocalOffer
+    LocalOffer,
+    PlayArrow as Play,
+    Pause
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Paper } from '@mui/material';
@@ -142,12 +144,17 @@ const initialDimensions: PredictionDimension[] = [
     }
 ];
 
+import AIAssistantPanel from '../../components/use-cases/AIAssistantPanel';
+
+
+
 export default function UseCaseConfiguration() {
     const { id } = useParams();
     const navigate = useNavigate();
     const useCase = useUseCaseStore((state) => state.getUseCaseById(id || ''));
 
-    const [activeTab, setActiveTab] = useState(2); // Start with Action Banks tab
+    const [activeTab, setActiveTab] = useState(6); // Start with AI Recommendations tab
+    const [actionBankTab, setActionBankTab] = useState(0);
     const [dimensions, setDimensions] = useState<PredictionDimension[]>(initialDimensions);
     const [draggedItem, setDraggedItem] = useState<PredictionDimension | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -211,35 +218,129 @@ export default function UseCaseConfiguration() {
         setShowSuccess(true);
     };
 
+    const handleUpdateConfiguration = (updates: any) => {
+        if (useCase) {
+            useUseCaseStore.getState().updateUseCase(useCase.id, updates);
+        }
+    };
+
     return (
         <Box>
-            {/* Header */}
-            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton onClick={() => navigate('/use-cases')} size="small">
-                        <ArrowBack />
-                    </IconButton>
-                    <Box>
-                        <Typography variant="h5" fontWeight="600">
-                            Use Case: {useCase.name}
+            {/* Header & Configuration */}
+            <Paper elevation={0} sx={{ mb: 3, p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                {/* Top Row: Title & Status */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <IconButton onClick={() => navigate('/use-cases')} size="small">
+                            <ArrowBack />
+                        </IconButton>
+                        <Box>
+                            <Typography variant="h5" fontWeight="700" sx={{ color: '#1a1a1a' }}>
+                                {useCase.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {useCase.description}
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="body2" fontWeight="600" color={useCase.status === 'active' ? 'success.main' : 'text.secondary'}>
+                            {useCase.status === 'active' ? 'ACTIVE' : 'PAUSED'}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Goal: {useCase.goal}
-                        </Typography>
+                        <Switch
+                            checked={useCase.status === 'active'}
+                            onChange={() => {
+                                const newStatus = useCase.status === 'active' ? 'paused' : 'active';
+                                useUseCaseStore.getState().updateUseCase(useCase.id, { status: newStatus });
+                            }}
+                            color="success"
+                        />
                     </Box>
                 </Box>
-                <Button
-                    variant="contained"
-                    onClick={handleSaveConfiguration}
-                    size="large"
-                >
-                    Save Configuration
-                </Button>
-            </Box>
+
+                {/* Configuration Row */}
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    gap: 3,
+                    p: 2,
+                    bgcolor: useCase.status === 'active' ? 'grey.50' : 'white',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    opacity: useCase.status === 'active' ? 0.8 : 1,
+                    transition: 'all 0.3s ease'
+                }}>
+                    <Grid container spacing={3} alignItems="flex-end">
+                        <Grid xs={12} md={3}>
+                            <Typography variant="caption" fontWeight="600" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                                TODAY'S BUDGET
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                value={useCase.todayBudget || ''}
+                                onChange={(e) => useUseCaseStore.getState().updateUseCase(useCase.id, { todayBudget: Number(e.target.value) })}
+                                disabled={useCase.status === 'active'}
+                                InputProps={{
+                                    startAdornment: <Typography color="text.secondary" sx={{ mr: 1 }}>₹</Typography>,
+                                    sx: { fontWeight: 600 }
+                                }}
+                                size="small"
+                                placeholder="Enter budget"
+                            />
+                        </Grid>
+                        <Grid xs={12} md={3}>
+                            <Typography variant="caption" fontWeight="600" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                                TODAY'S GOAL (CONVERSIONS)
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                value={useCase.todayGoal || ''}
+                                onChange={(e) => useUseCaseStore.getState().updateUseCase(useCase.id, { todayGoal: Number(e.target.value) })}
+                                disabled={useCase.status === 'active'}
+                                InputProps={{
+                                    sx: { fontWeight: 600 }
+                                }}
+                                size="small"
+                                placeholder="Enter goal"
+                            />
+                        </Grid>
+                        <Grid xs={12} md={6}>
+                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                                {useCase.status === 'active' ? (
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<Pause />}
+                                        onClick={() => useUseCaseStore.getState().updateUseCase(useCase.id, { status: 'paused' })}
+                                        color="warning"
+                                    >
+                                        Pause to Configure
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<Play />}
+                                        onClick={() => {
+                                            useUseCaseStore.getState().updateUseCase(useCase.id, { status: 'active' });
+                                            handleSaveConfiguration();
+                                        }}
+                                        color="success"
+                                        sx={{ px: 4 }}
+                                    >
+                                        Save & Activate
+                                    </Button>
+                                )}
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Paper>
 
             {/* Tabs Navigation */}
             <Card>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+
                     <Tabs
                         value={activeTab}
                         onChange={handleTabChange}
@@ -252,7 +353,7 @@ export default function UseCaseConfiguration() {
                         <Tab label="Conversion" />
                         <Tab label="Guardrails" />
                         <Tab label="Features to use" />
-                        <Tab label="Outputs" />
+                        <Tab label="AI Recommendations" />
                         <Tab label="Custom Reporting" />
                     </Tabs>
                 </Box>
@@ -537,10 +638,10 @@ export default function UseCaseConfiguration() {
                             </Box>
                         </Box>
                     </CardContent>
-                </TabPanel>
+                </TabPanel >
 
                 {/* Prediction Dimensions & Fallback Tab */}
-                <TabPanel value={activeTab} index={1}>
+                < TabPanel value={activeTab} index={1} >
                     <CardContent>
                         <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -645,112 +746,184 @@ export default function UseCaseConfiguration() {
                             </Table>
                         </TableContainer>
                     </CardContent>
-                </TabPanel>
+                </TabPanel >
 
                 {/* Action Banks Tab */}
                 <TabPanel value={activeTab} index={2}>
-                    <CardContent>
+                    <Box sx={{ p: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                             <Box>
                                 <Typography variant="h6" fontWeight="600" gutterBottom>
-                                    Product Action Banks
+                                    Action Banks
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
-                                    Manage product offers and incentives for AI recommendations
+                                    Manage your action libraries for each decision dimension
                                 </Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                                <Button variant="outlined" size="small">
-                                    Import from Excel
-                                </Button>
-                                <Button variant="outlined" size="small">
-                                    Download Template
-                                </Button>
-                                <Button variant="outlined" size="small">
-                                    Export Products
-                                </Button>
-                                <Button variant="contained" size="small" startIcon={<Add />}>
-                                    Add Product
-                                </Button>
-                            </Box>
+                            <Button variant="contained" size="small" startIcon={<Add />} sx={{ bgcolor: '#005dac' }}>
+                                Add Action
+                            </Button>
                         </Box>
 
-                        {/* Filters */}
-                        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                            <FormControl size="small" sx={{ minWidth: 200 }}>
-                                <InputLabel>Product Category</InputLabel>
-                                <Select value="all" label="Product Category">
-                                    <MenuItem value="all">All Products</MenuItem>
-                                    <MenuItem value="personal-loan">Personal Loans</MenuItem>
-                                    <MenuItem value="credit-card">Credit Cards</MenuItem>
-                                    <MenuItem value="insurance">Insurance</MenuItem>
-                                    <MenuItem value="investment">Investments</MenuItem>
-                                </Select>
-                            </FormControl>
-                            <FormControlLabel
-                                control={<Switch defaultChecked />}
-                                label="Active offers only"
-                            />
-                        </Box>
+                        <Tabs
+                            value={actionBankTab}
+                            onChange={(_e, v) => setActionBankTab(v)}
+                            sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+                        >
+                            <Tab label="Channel" />
+                            <Tab label="Offer" />
+                            <Tab label="Time" />
+                            <Tab label="Creative" />
+                        </Tabs>
 
-                        {/* Products Table */}
-                        <TableContainer>
-                            <Table>
-                                <TableHead>
-                                    <TableRow sx={{ bgcolor: '#F5F5F5' }}>
-                                        <TableCell><Typography variant="caption" fontWeight="600">PRODUCT_ID</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">STATUS</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">VALID_UNTIL</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">PRODUCT_NAME</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">INTEREST_RATE</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">CASHBACK_AMT</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">TENURE_MONTHS</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">CREATED_DATE</Typography></TableCell>
-                                        <TableCell><Typography variant="caption" fontWeight="600">DESCRIPTION</Typography></TableCell>
-                                        <TableCell></TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {[
-                                        { id: 1, status: 'Active', validUntil: '2025-12-31', name: 'Premium Personal Loan', interestRate: '10.5%', cashback: '₹5,000', tenure: '12-60', created: '2024-01-15', description: 'Low interest personal loan for salaried...' },
-                                        { id: 2, status: 'Active', validUntil: '2025-06-30', name: 'Gold Credit Card', interestRate: 'N/A', cashback: '₹2,000', tenure: 'Lifetime', created: '2024-02-01', description: 'Premium credit card with travel benefits...' },
-                                        { id: 3, status: 'Active', validUntil: '2025-12-31', name: 'Instant Personal Loan', interestRate: '11.99%', cashback: '₹3,000', tenure: '6-36', created: '2024-03-10', description: 'Quick approval personal loan up to ₹5L...' },
-                                        { id: 4, status: 'Active', validUntil: '2025-09-30', name: 'Health Insurance Plus', interestRate: 'N/A', cashback: '₹1,000', tenure: '12', created: '2024-04-05', description: 'Comprehensive health coverage for family...' },
-                                        { id: 5, status: 'Active', validUntil: '2025-12-31', name: 'Flexi Personal Loan', interestRate: '12.5%', cashback: '₹0', tenure: '12-48', created: '2024-05-20', description: 'Flexible repayment options available...' },
-                                        { id: 6, status: 'Active', validUntil: '2025-08-31', name: 'Platinum Credit Card', interestRate: 'N/A', cashback: '₹5,000', tenure: 'Lifetime', created: '2024-06-01', description: 'Elite card with airport lounge access...' },
-                                        { id: 7, status: 'Active', validUntil: '2025-12-31', name: 'Business Loan', interestRate: '13.5%', cashback: '₹10,000', tenure: '24-60', created: '2024-07-15', description: 'Working capital for SMEs and MSMEs...' },
-                                        { id: 8, status: 'Active', validUntil: '2025-10-31', name: 'Term Life Insurance', interestRate: 'N/A', cashback: '₹500', tenure: '120-360', created: '2024-08-01', description: 'Pure term plan with high coverage...' },
-                                    ].map((product) => (
-                                        <TableRow key={product.id} hover>
-                                            <TableCell><Typography variant="body2">{product.id}</Typography></TableCell>
-                                            <TableCell>
-                                                <Chip label={product.status} size="small" sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', fontWeight: 500 }} />
-                                            </TableCell>
-                                            <TableCell><Typography variant="body2">{product.validUntil}</Typography></TableCell>
-                                            <TableCell><Typography variant="body2" fontWeight="500">{product.name}</Typography></TableCell>
-                                            <TableCell><Typography variant="body2">{product.interestRate}</Typography></TableCell>
-                                            <TableCell>
-                                                <Typography variant="body2" fontWeight="500" color={product.cashback !== '₹0' ? 'success.main' : 'text.secondary'}>
-                                                    {product.cashback}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell><Typography variant="body2">{product.tenure}</Typography></TableCell>
-                                            <TableCell><Typography variant="body2" color="text.secondary">{product.created}</Typography></TableCell>
-                                            <TableCell><Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200 }}>{product.description}</Typography></TableCell>
-                                            <TableCell>
-                                                <IconButton size="small"><EditIcon fontSize="small" /></IconButton>
-                                            </TableCell>
+                        {/* Channel Tab */}
+                        {actionBankTab === 0 && (
+                            <TableContainer component={Paper} variant="outlined">
+                                <Table>
+                                    <TableHead sx={{ bgcolor: '#F5F5F5' }}>
+                                        <TableRow>
+                                            <TableCell><Typography variant="caption" fontWeight="600">ID</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">CHANNEL NAME</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">TYPE</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">COST PER SEND</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">STATUS</Typography></TableCell>
+                                            <TableCell></TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </CardContent>
+                                    </TableHead>
+                                    <TableBody>
+                                        {[
+                                            { id: 'CH001', name: 'Standard Email', type: 'Email', cost: '₹0.05', status: 'Active' },
+                                            { id: 'CH002', name: 'Priority SMS', type: 'SMS', cost: '₹0.15', status: 'Active' },
+                                            { id: 'CH003', name: 'WhatsApp Business', type: 'WhatsApp', cost: '₹0.45', status: 'Active' },
+                                            { id: 'CH004', name: 'Push Notification', type: 'Push', cost: '₹0.00', status: 'Active' },
+                                        ].map((row) => (
+                                            <TableRow key={row.id} hover>
+                                                <TableCell><Typography variant="body2">{row.id}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2" fontWeight="500">{row.name}</Typography></TableCell>
+                                                <TableCell><Chip label={row.type} size="small" variant="outlined" /></TableCell>
+                                                <TableCell><Typography variant="body2">{row.cost}</Typography></TableCell>
+                                                <TableCell><Chip label={row.status} size="small" color="success" sx={{ bgcolor: '#E8F5E9', color: '#2E7D32' }} /></TableCell>
+                                                <TableCell>
+                                                    <IconButton size="small"><EditIcon fontSize="small" /></IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+
+                        {/* Offer Tab */}
+                        {actionBankTab === 1 && (
+                            <TableContainer component={Paper} variant="outlined">
+                                <Table>
+                                    <TableHead sx={{ bgcolor: '#F5F5F5' }}>
+                                        <TableRow>
+                                            <TableCell><Typography variant="caption" fontWeight="600">ID</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">OFFER NAME</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">DESCRIPTION</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">VALUE</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">VALID UNTIL</Typography></TableCell>
+                                            <TableCell></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {[
+                                            { id: 'OF001', name: '10% Cashback', desc: 'Get 10% cashback on first transaction', value: '10%', valid: '2025-12-31' },
+                                            { id: 'OF002', name: 'Zero Processing Fee', desc: 'No processing fee for loans > 5L', value: '₹2000', valid: '2025-06-30' },
+                                            { id: 'OF003', name: 'Amazon Voucher', desc: '₹500 Amazon voucher on card activation', value: '₹500', valid: '2025-12-31' },
+                                        ].map((row) => (
+                                            <TableRow key={row.id} hover>
+                                                <TableCell><Typography variant="body2">{row.id}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2" fontWeight="500">{row.name}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2" color="text.secondary">{row.desc}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2">{row.value}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2">{row.valid}</Typography></TableCell>
+                                                <TableCell>
+                                                    <IconButton size="small"><EditIcon fontSize="small" /></IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+
+                        {/* Time Tab */}
+                        {actionBankTab === 2 && (
+                            <TableContainer component={Paper} variant="outlined">
+                                <Table>
+                                    <TableHead sx={{ bgcolor: '#F5F5F5' }}>
+                                        <TableRow>
+                                            <TableCell><Typography variant="caption" fontWeight="600">ID</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">TIME SLOT</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">DESCRIPTION</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">OPTIMAL FOR</Typography></TableCell>
+                                            <TableCell></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {[
+                                            { id: 'TM001', name: 'Morning Commute', desc: '08:00 AM - 10:00 AM', optimal: 'News, Updates' },
+                                            { id: 'TM002', name: 'Lunch Break', desc: '12:00 PM - 02:00 PM', optimal: 'Shopping, Browsing' },
+                                            { id: 'TM003', name: 'Evening Relax', desc: '07:00 PM - 09:00 PM', optimal: 'Entertainment, Leisure' },
+                                            { id: 'TM004', name: 'Weekend Morning', desc: 'Sat-Sun 09:00 AM - 11:00 AM', optimal: 'Planning, Research' },
+                                        ].map((row) => (
+                                            <TableRow key={row.id} hover>
+                                                <TableCell><Typography variant="body2">{row.id}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2" fontWeight="500">{row.name}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2" color="text.secondary">{row.desc}</Typography></TableCell>
+                                                <TableCell><Chip label={row.optimal} size="small" variant="outlined" /></TableCell>
+                                                <TableCell>
+                                                    <IconButton size="small"><EditIcon fontSize="small" /></IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+
+                        {/* Creative Tab */}
+                        {actionBankTab === 3 && (
+                            <TableContainer component={Paper} variant="outlined">
+                                <Table>
+                                    <TableHead sx={{ bgcolor: '#F5F5F5' }}>
+                                        <TableRow>
+                                            <TableCell><Typography variant="caption" fontWeight="600">ID</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">CREATIVE NAME</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">TYPE</Typography></TableCell>
+                                            <TableCell><Typography variant="caption" fontWeight="600">PREVIEW</Typography></TableCell>
+                                            <TableCell></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {[
+                                            { id: 'CR001', name: 'Summer Sale Banner', type: 'Image', preview: 'summer_sale_v1.jpg' },
+                                            { id: 'CR002', name: 'Welcome Email Template', type: 'HTML', preview: 'welcome_email.html' },
+                                            { id: 'CR003', name: 'Urgent Alert Text', type: 'Text', preview: 'Limited time offer...' },
+                                            { id: 'CR004', name: 'Product Carousel', type: 'Rich Media', preview: 'carousel_v2.json' },
+                                        ].map((row) => (
+                                            <TableRow key={row.id} hover>
+                                                <TableCell><Typography variant="body2">{row.id}</Typography></TableCell>
+                                                <TableCell><Typography variant="body2" fontWeight="500">{row.name}</Typography></TableCell>
+                                                <TableCell><Chip label={row.type} size="small" variant="outlined" /></TableCell>
+                                                <TableCell><Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>{row.preview}</Typography></TableCell>
+                                                <TableCell>
+                                                    <IconButton size="small"><EditIcon fontSize="small" /></IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+                    </Box>
                 </TabPanel>
 
 
                 {/* Conversion Tab */}
-                <TabPanel value={activeTab} index={3}>
+                < TabPanel value={activeTab} index={3} >
                     <Box sx={{ p: 3 }}>
                         <Typography variant="h6" fontWeight="600" gutterBottom>
                             Conversion Tracking Settings
@@ -976,10 +1149,10 @@ export default function UseCaseConfiguration() {
                             </RadioGroup>
                         </Box>
                     </Box>
-                </TabPanel>
+                </TabPanel >
 
                 {/* Guardrails Tab */}
-                <TabPanel value={activeTab} index={4}>
+                < TabPanel value={activeTab} index={4} >
                     <Box sx={{ p: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
                             <Button
@@ -1152,10 +1325,10 @@ export default function UseCaseConfiguration() {
                             </TableContainer>
                         </Card>
                     </Box>
-                </TabPanel>
+                </TabPanel >
 
                 {/* Features to use Tab */}
-                <TabPanel value={activeTab} index={5}>
+                < TabPanel value={activeTab} index={5} >
                     <div className="p-6 bg-gray-50/50 min-h-[600px]">
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
@@ -1277,11 +1450,10 @@ export default function UseCaseConfiguration() {
                             </div>
                         </div>
                     </div>
-                </TabPanel>
+                </TabPanel >
 
-                {/* Outputs Tab */}
                 <TabPanel value={activeTab} index={6}>
-                    <CampaignRecommendations />
+                    <CampaignRecommendations useCase={useCase} />
                 </TabPanel>
 
 
@@ -1316,10 +1488,6 @@ export default function UseCaseConfiguration() {
                         {/* Sub-Tabs */}
                         <Tabs value={0} sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
                             <Tab label="Performance" />
-                            <Tab label="Insights" />
-                            <Tab label="Diagnostics" />
-                            <Tab label="Timeline" />
-                            <Tab label="Incremental Impact" />
                         </Tabs>
 
                         {/* Controls Row */}
@@ -1541,6 +1709,15 @@ export default function UseCaseConfiguration() {
                     Configuration saved successfully!
                 </Alert>
             </Snackbar >
+            {/* AI Assistant Panel */}
+            {
+                useCase && (
+                    <AIAssistantPanel
+                        useCase={useCase}
+                        onUpdateConfiguration={handleUpdateConfiguration}
+                    />
+                )
+            }
         </Box >
     );
 }
